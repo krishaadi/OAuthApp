@@ -1,16 +1,30 @@
-const express = require('express');
-const app = express();
-const path = require('path');
+// from OAuth APIs sample
+var express = require('express');
+var app = express();
+var jwt = require('express-jwt');
+var jwks = require('jwks-rsa');
+var cors = require('cors');
 
-app.use('/', express.static(__dirname + '/'));
+var port = process.env.PORT || 8080;
 
-app.get('/*', (req,res) => {
-res.sendFile(path.join(__dirname + '/index.html'));
+var jwtCheck = jwt({
+      secret: jwks.expressJwtSecret({
+          cache: true,
+          rateLimit: true,
+          jwksRequestsPerMinute: 5,
+          jwksUri: 'https://dev-auth-delo.auth0.com/.well-known/jwks.json'
+    }),
+    audience: 'http://dev-auth-delo.com/apis',
+    issuer: 'https://dev-auth-delo.auth0.com/',
+    algorithms: ['RS256']
 });
 
-const hostname = 'localhost';
-const port = 3000 ;
+app.use(cors()); //for cross over ports
+app.use(jwtCheck);
 
-const server = app.listen(port, hostname, () => {
-  console.log('Server listening at http://${hostname}:${port}');  
-})
+app.get('/authorized', function (req, res) {
+    res.json({message: 'This is a secured Resource'});
+});
+
+app.listen(port);
+console.log('Server running on 8080');
